@@ -1,9 +1,10 @@
-name: LinkedIn daily post
+name: LinkedIn post
 
 on:
   schedule:
-    - cron: "0 5 * * *"   # cron is UTC. 05:00 UTC = 10:00 in UTC+5. Adjust for your timezone.
-  workflow_dispatch:       # "Run workflow" button for manual/test runs
+    - cron: "30 8 * * 2"    # Tuesday   08:30 UTC = 1:30 PM PKT (UTC+5) — strongest post of the week
+    - cron: "30 14 * * 4"   # Thursday  14:30 UTC = 7:30 PM PKT (UTC+5) — prime time for US audience
+  workflow_dispatch:         # "Run workflow" button for manual/test runs
     inputs:
       dry_run:
         description: "Generate and print the post without publishing"
