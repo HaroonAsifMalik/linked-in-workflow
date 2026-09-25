@@ -1,0 +1,47 @@
+name: LinkedIn daily post
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # cron is UTC. 05:00 UTC = 10:00 in UTC+5. Adjust for your timezone.
+  workflow_dispatch:       # "Run workflow" button for manual/test runs
+    inputs:
+      dry_run:
+        description: "Generate and print the post without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write          # lets the job commit state/posted.json (dedupe memory)
+
+concurrency: linkedin-post # never run two posts at once
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Generate and publish
+        run: python main.py
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LINKEDIN_PERSON_URN: ${{ vars.LINKEDIN_PERSON_URN }}
+          LINKEDIN_TOKEN_CREATED: ${{ vars.LINKEDIN_TOKEN_CREATED }}
+          LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+
+      - name: Save state (dedupe + queue)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state queue
+          git diff --cached --quiet || (git commit -m "chore: record LinkedIn post [skip ci]" && git push)
